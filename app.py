@@ -24,7 +24,7 @@ def get_db_connection():
         port=DB_CONFIG["port"],
         user=DB_CONFIG["user"],
         password=DB_CONFIG["password"],
-        database=DB_CONFIG["database"],
+        database="defaultdb",
     )
 # Home Route
 @app.route("/")
