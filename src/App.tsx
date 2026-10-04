@@ -448,10 +448,16 @@ function VillageArt() {
   </svg>;
 }
 
-function Register({ go, language, setLanguage }: {
+function Register({
+  go,
+  language,
+  setLanguage,
+  selectedRole,
+}: {
   go: (p: Page) => void;
   language: Language;
   setLanguage: (l: Language) => void;
+  selectedRole: "resident" | "authority";
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -481,8 +487,15 @@ function Register({ go, language, setLanguage }: {
     try {
       const response = await fetch(`${API_BASE}/api/register`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role: selectedRole,
+        }),
       });
 
       const data = await response.json();
@@ -491,49 +504,114 @@ function Register({ go, language, setLanguage }: {
         throw new Error(data.message || "Registration failed.");
       }
 
-      setSuccess("Account created! Please log in.");
+      setSuccess(
+        `${selectedRole === "authority" ? "Authority" : "Resident"} account created! Please log in.`
+      );
+
       setTimeout(() => go("login"), 1000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not connect to server.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not connect to server."
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  const isAuthority = selectedRole === "authority";
+
   return (
     <main className="simple-page">
       <div className="simple-top">
         <Logo />
-        <LanguageSelect language={language} setLanguage={setLanguage} />
+        <LanguageSelect
+          language={language}
+          setLanguage={setLanguage}
+        />
       </div>
 
       <form className="form-shell" onSubmit={submit}>
-        <button type="button" className="back-link" onClick={() => go("login")}>
-          <Icon name="back" />Back to login
+        <button
+          type="button"
+          className="back-link"
+          onClick={() => go("login")}
+        >
+          <Icon name="back" />
+          Back to login
         </button>
 
-        <div className="section-title">Create your resident account</div>
-        <p className="section-sub">Enter your name, email and password to register.</p>
-
-        <div className="form-grid">
-          <Field label="Full name" placeholder="Your full name"
-            value={name} onChange={setName} required />
-          <Field label="Email" placeholder="name@example.com" type="email"
-            value={email} onChange={setEmail} required />
-          <Field label="Create password" placeholder="At least 8 characters"
-            type="password" value={password} onChange={setPassword} required />
-          <Field label="Confirm password" placeholder="Enter password again"
-            type="password" value={confirmPassword}
-            onChange={setConfirmPassword} required />
+        <div className="section-title">
+          {isAuthority
+            ? "Create your authority account"
+            : "Create your resident account"}
         </div>
 
-        {error && <p role="alert" style={{ color: "red" }}>{error}</p>}
-        {success && <p role="status">{success}</p>}
+        <p className="section-sub">
+          {isAuthority
+            ? "Enter your details to create an authorized authority account."
+            : "Enter your name, email and password to register."}
+        </p>
+
+        <div className="form-grid">
+          <Field
+            label="Full name"
+            placeholder="Your full name"
+            value={name}
+            onChange={setName}
+            required
+          />
+
+          <Field
+            label="Email"
+            placeholder="name@example.com"
+            type="email"
+            value={email}
+            onChange={setEmail}
+            required
+          />
+
+          <Field
+            label="Create password"
+            placeholder="At least 8 characters"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            required
+          />
+
+          <Field
+            label="Confirm password"
+            placeholder="Enter password again"
+            type="password"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            required
+          />
+        </div>
+
+        {error && (
+          <p role="alert" style={{ color: "red" }}>
+            {error}
+          </p>
+        )}
+
+        {success && (
+          <p role="status">
+            {success}
+          </p>
+        )}
 
         <div className="form-actions">
-          <Button type="button" variant="secondary" onClick={() => go("login")}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => go("login")}
+          >
             Cancel
           </Button>
+
           <Button type="submit" disabled={loading}>
             {loading ? "Creating account..." : "Create account"}
           </Button>
@@ -542,7 +620,6 @@ function Register({ go, language, setLanguage }: {
     </main>
   );
 }
-
 function AppShell({ page, go, language, setLanguage, children, official = false }: { page: Page; go: (p: Page) => void; language: Language; setLanguage: (l: Language) => void; children: ReactNode; official?: boolean }) {
   const t = copy[language];
   const [open, setOpen] = useState(false);
@@ -1571,7 +1648,12 @@ export default function App() {
       );
 
     case "register":
-      return <Register {...props} />;
+        return (
+          <Register
+            {...props}
+            selectedRole={selectedRole}
+          />
+        );
     case "dashboard":
       return <Dashboard {...props} />;
     case "report":
