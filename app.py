@@ -35,7 +35,7 @@ def home():
     })
 
 
-# Test Database Connection
+# Test Database 
 @app.route("/api/db-test")
 def db_test():
     connection = None
@@ -44,12 +44,21 @@ def db_test():
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
+
+        # Explicitly select the Aiven database
+        cursor.execute("USE defaultdb")
+
+        # Confirm which database is currently selected
+        cursor.execute("SELECT DATABASE()")
+        database = cursor.fetchone()[0]
+
+        # Check tables
         cursor.execute("SHOW TABLES")
         tables = [row[0] for row in cursor.fetchall()]
 
         return jsonify({
             "success": True,
-            "database": "jansetu",
+            "database": database,
             "tables": tables
         })
 
