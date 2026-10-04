@@ -50,11 +50,11 @@ def db_test():
             "tables": tables
         })
 
-    except Error:
-        app.logger.exception("Database test failed")
+    except Error as e:
         return jsonify({
             "success": False,
-            "message": "Database connection failed"
+            "message": "Database connection failed",
+            "error": str(e)
         }), 500
 
     finally:
