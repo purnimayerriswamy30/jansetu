@@ -1121,14 +1121,141 @@ function Tracking({ go, language, setLanguage }: { go: (p: Page) => void; langua
   return <AppShell page="complaints" go={go} language={language} setLanguage={setLanguage}><div className="content-wrap"><button className="back-link" onClick={() => go("complaints")}><Icon name="back" />Back to my complaints</button><div className="tracking-head"><div><div className="eyebrow">COMPLAINT JS-2025-1048</div><div className="page-title">Large pothole near primary school</div><div className="detail-row"><span><Icon name="file" />Roads & potholes</span><span><Icon name="pin" />Ward 4 · School Road</span><span><Icon name="clock" />Reported 18 Jun 2025</span></div></div><Status value="In Progress" tone="info" /></div><div className="tracking-layout"><div className="tracking-primary"><section className="white-card status-overview"><div><span>Current status</span><strong>Repair work has been scheduled</strong><p>Last updated 20 June 2025 at 11:10 AM</p></div><div className="progress-ring">4<small>of 5</small></div></section><section className="white-card"><div className="section-title">Progress timeline</div><p className="section-sub">Every recorded action appears here in chronological order.</p><div className="timeline">{events.map(([date,title,body,state]) => <div className={`timeline-event ${state}`} key={title}><div className="timeline-marker">{state === "done" ? <Icon name="check" /> : state === "current" ? <span /> : null}</div><div><small>{date}</small><strong>{title}</strong><p>{body}</p>{state === "current" && <span className="current-label">CURRENT STEP</span>}</div></div>)}</div></section><section className="white-card"><div className="section-title">Issue details</div><p>The road surface has a large, deep pothole near the primary school entrance. It becomes difficult to see after rain and may create a safety risk for students and riders.</p><div className="evidence-placeholder"><Icon name="road" size={38} /><span>Photo evidence · 1 image</span></div></section></div><aside className="tracking-side"><section className="white-card"><div className="mini-title">Responsible team</div><div className="department"><span><Icon name="building" /></span><div><strong>Roads Maintenance</strong><p>Local works department</p></div></div><div className="privacy-note"><Icon name="shield" /><span>Official details are shown only when recorded and permitted.</span></div></section><section className="white-card"><div className="mini-title">Need help?</div><p>If important details have changed, add an update for the reviewing team.</p><Button full variant="secondary">Add information</Button></section><section className="white-card transparency"><Icon name="shield" /><div><strong>Transparent by design</strong><p>JanSetu never marks a complaint resolved without an authorized recorded action.</p></div></section></aside></div></div></AppShell>;
 }
 
-function Notifications({ go, language, setLanguage }: { go: (p: Page) => void; language: Language; setLanguage: (l: Language) => void }) {
-  const notes = [
-    ["road","Work has started on your complaint","Roads Maintenance recorded a new progress update for JS-2025-1048.","12 minutes ago",true],
-    ["check","Complaint accepted for action","Your complaint JS-2025-1048 was reviewed and accepted.","Yesterday",true],
-    ["file","Complaint submitted successfully","Your reference number is JS-2025-1048.","18 Jun",false],
-    ["check","Resolution recorded","Waste collection was completed for JS-2025-0976. View the resolution notes.","06 Jun",false],
+function Notifications({
+  go,
+  language,
+  setLanguage,
+  currentUser,
+}: {
+  go: (p: Page) => void;
+  language: Language;
+  setLanguage: (l: Language) => void;
+  currentUser: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  } | null;
+}) {
+  const isAuthority =
+    String(currentUser?.role).toLowerCase() === "authority";
+
+  const residentNotes = [
+    [
+      "road",
+      "Work has started on your complaint",
+      "Roads Maintenance recorded a new progress update for JS-2025-1048.",
+      "12 minutes ago",
+      true,
+    ],
+    [
+      "check",
+      "Complaint accepted for action",
+      "Your complaint JS-2025-1048 was reviewed and accepted.",
+      "Yesterday",
+      true,
+    ],
+    [
+      "file",
+      "Complaint submitted successfully",
+      "Your reference number is JS-2025-1048.",
+      "18 Jun",
+      false,
+    ],
+    [
+      "check",
+      "Resolution recorded",
+      "Waste collection was completed for JS-2025-0976. View the resolution notes.",
+      "06 Jun",
+      false,
+    ],
   ];
-  return <AppShell page="notifications" go={go} language={language} setLanguage={setLanguage}><div className="narrow-wrap"><PageTitle eyebrow="UPDATES" title="Notifications" body="Status changes and requests related to your complaints." action={<Button variant="ghost">Mark all as read</Button>} /><div className="notification-list">{notes.map(([icon,title,body,time,unread]) => <button className={unread ? "unread" : ""} key={String(title)} onClick={() => go("tracking")}><span className="note-icon"><Icon name={String(icon)} /></span><div><strong>{String(title)}</strong><p>{String(body)}</p><small>{String(time)}</small></div>{unread && <i />}</button>)}</div></div></AppShell>;
+
+  const authorityNotes = [
+    [
+      "file",
+      "New complaint assigned",
+      "A new civic complaint requires your review and action.",
+      "12 minutes ago",
+      true,
+    ],
+    [
+      "road",
+      "High priority complaint",
+      "A high-priority road complaint has been submitted in your jurisdiction.",
+      "Yesterday",
+      true,
+    ],
+    [
+      "check",
+      "Complaint status updated",
+      "Complaint JS-2025-1048 has been updated successfully.",
+      "18 Jun",
+      false,
+    ],
+    [
+      "file",
+      "Resolution recorded",
+      "A complaint resolution has been recorded successfully.",
+      "06 Jun",
+      false,
+    ],
+  ];
+
+  const notes = isAuthority ? authorityNotes : residentNotes;
+
+  return (
+    <AppShell
+      page="notifications"
+      go={go}
+      language={language}
+      setLanguage={setLanguage}
+      official={isAuthority}
+    >
+      <div className="narrow-wrap">
+        <PageTitle
+          eyebrow={isAuthority ? "OFFICIAL UPDATES" : "UPDATES"}
+          title="Notifications"
+          body={
+            isAuthority
+              ? "Updates, assignments, and actions related to civic complaints."
+              : "Status changes and requests related to your complaints."
+          }
+          action={
+            <Button variant="ghost">
+              Mark all as read
+            </Button>
+          }
+        />
+
+        <div className="notification-list">
+          {notes.map(
+            ([icon, title, body, time, unread]) => (
+              <button
+                className={unread ? "unread" : ""}
+                key={String(title)}
+                onClick={() =>
+                  go(isAuthority ? "authority" : "tracking")
+                }
+              >
+                <span className="note-icon">
+                  <Icon name={String(icon)} />
+                </span>
+
+                <div>
+                  <strong>{String(title)}</strong>
+                  <p>{String(body)}</p>
+                  <small>{String(time)}</small>
+                </div>
+
+                {unread && <i />}
+              </button>
+            )
+          )}
+        </div>
+      </div>
+    </AppShell>
+  );
 }
 
 function Authority({
@@ -1665,7 +1792,12 @@ export default function App() {
     case "tracking":
       return <Tracking {...props} />;
     case "notifications":
-      return <Notifications {...props} />;
+      return (
+        <Notifications
+          {...props}
+          currentUser={currentUser}
+        />
+      );
     case "authority":
       return <Authority {...props} />;
     case "review":
