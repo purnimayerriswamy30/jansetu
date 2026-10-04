@@ -217,7 +217,6 @@ function LanguageSelect({ language, setLanguage, inverse = false }: { language: 
 function Status({ value, tone = "info" }: { value: string; tone?: "info" | "warning" | "success" | "danger" | "neutral" }) {
   return <span className={`status status-${tone}`}><span className="status-dot" />{value}</span>;
 }
-
 function Login({
   go,
   language,
@@ -248,10 +247,18 @@ function Login({
     setLoading(true);
 
     try {
+      console.log("LOGIN ROLE:", selectedRole);
+
       const response = await fetch(`${API_BASE}/api/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password,expected_role:selectedRole }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          expected_role: selectedRole,
+        }),
       });
 
       const data = await response.json();
@@ -261,7 +268,13 @@ function Login({
       }
 
       setCurrentUser(data.user);
-      go("dashboard");
+
+      // Send the user to the correct page based on their account role
+      if (String(data.user.role).toLowerCase() === "authority") {
+        go("authority");
+      } else {
+        go("dashboard");
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not connect to server"
@@ -287,20 +300,29 @@ function Login({
           <div className="eyebrow light-text">
             SMART CIVIC PARTICIPATION
           </div>
+
           <div className="display-title">
             Your voice can<br />shape your village.
           </div>
+
           <p>
             Report local problems, follow every update, and understand the
             action taken—all in one clear place.
           </p>
+
           <div className="trust-row">
-            <span><Icon name="shield" />Private by design</span>
-            <span><Icon name="clock" />Transparent updates</span>
+            <span>
+              <Icon name="shield" />Private by design
+            </span>
+
+            <span>
+              <Icon name="clock" />Transparent updates
+            </span>
           </div>
         </div>
 
         <VillageArt />
+
         <p className="disclaimer">
           JanSetu is a student demonstration platform and is not an official
           government service.
@@ -310,7 +332,10 @@ function Login({
       <section className="auth-panel">
         <div className="mobile-auth-top">
           <Logo />
-          <LanguageSelect language={language} setLanguage={setLanguage} />
+          <LanguageSelect
+            language={language}
+            setLanguage={setLanguage}
+          />
         </div>
 
         <form className="auth-card" onSubmit={submit}>
@@ -347,6 +372,7 @@ function Login({
             <label className="check">
               <input type="checkbox" /> Remember me
             </label>
+
             <button className="text-button" type="button">
               {t.forgot}
             </button>
@@ -356,7 +382,11 @@ function Login({
             {loading ? "Signing in…" : t.login}
           </Button>
 
-          <div className="or"><span />or<span /></div>
+          <div className="or">
+            <span />
+            or
+            <span />
+          </div>
 
           <Button
             full
@@ -378,7 +408,10 @@ function Login({
 
           <p className="auth-foot">
             New to JanSetu?{" "}
-            <button type="button" onClick={() => go("register")}>
+            <button
+              type="button"
+              onClick={() => go("register")}
+            >
               {t.create}
             </button>
           </p>
