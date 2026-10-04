@@ -1,7 +1,7 @@
 import { FormEvent, ReactNode, useMemo, useState,useEffect} from "react";
 import "./index.css"
 import React from "react";
-const API_BASE = "http://127.0.0.1:5000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000";
 
 type Complaint = {
   id: number;
@@ -248,7 +248,7 @@ function Login({
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/login", {
+      const response = await fetch(`${API_BASE}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password,expected_role:selectedRole }),
@@ -261,14 +261,7 @@ function Login({
       }
 
       setCurrentUser(data.user);
-
-      // IMPORTANT: the dashboard is selected from the authenticated
-      // backend role, not from the role chosen before login.
-      if (data.user?.role === "authority") {
-        go("authority");
-      } else {
-        go("dashboard");
-      }
+      go("dashboard");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not connect to server"
@@ -279,7 +272,7 @@ function Login({
   };
 
   return (
-    <main className={`auth-page ${selectedRole === "authority" ? "authority-auth-page" : ""}`}>
+    <main className="auth-page">
       <section className="auth-story">
         <div className="auth-top">
           <Logo light />
@@ -321,9 +314,9 @@ function Login({
         </div>
 
         <form className="auth-card" onSubmit={submit}>
-          <div className={`auth-heading ${selectedRole === "authority" ? "authority-login-heading" : ""}`}>
-            <div className="section-title">{selectedRole === "authority" ? "Authority sign in" : t.welcome}</div>
-            <p>{selectedRole === "authority" ? "Sign in to review complaints, accept cases, manage work, and publish progress updates." : t.intro}</p>
+          <div className="auth-heading">
+            <div className="section-title">{t.welcome}</div>
+            <p>{t.intro}</p>
           </div>
 
           <Field
@@ -365,6 +358,24 @@ function Login({
 
           <div className="or"><span />or<span /></div>
 
+          <Button
+            full
+            variant="secondary"
+            onClick={() => go("dashboard")}
+          >
+            {t.demo}
+          </Button>
+
+          <button
+            className="official-demo"
+            type="button"
+            onClick={() => go("authority")}
+          >
+            <Icon name="shield" size={17} />
+            Open authorized official demo
+            <Icon name="arrow" size={15} />
+          </button>
+
           <p className="auth-foot">
             New to JanSetu?{" "}
             <button type="button" onClick={() => go("register")}>
@@ -404,11 +415,10 @@ function VillageArt() {
   </svg>;
 }
 
-function Register({ go, language, setLanguage, selectedRole }: {
+function Register({ go, language, setLanguage }: {
   go: (p: Page) => void;
   language: Language;
   setLanguage: (l: Language) => void;
-  selectedRole: "resident" | "authority";
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -436,10 +446,10 @@ function Register({ go, language, setLanguage, selectedRole }: {
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/register", {
+      const response = await fetch(`${API_BASE}/api/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role: selectedRole }),
+        body: JSON.stringify({ name, email, password }),
       });
 
       const data = await response.json();
@@ -458,7 +468,7 @@ function Register({ go, language, setLanguage, selectedRole }: {
   };
 
   return (
-    <main className={`simple-page ${selectedRole === "authority" ? "authority-register-page" : ""}`}>
+    <main className="simple-page">
       <div className="simple-top">
         <Logo />
         <LanguageSelect language={language} setLanguage={setLanguage} />
@@ -469,14 +479,8 @@ function Register({ go, language, setLanguage, selectedRole }: {
           <Icon name="back" />Back to login
         </button>
 
-        <div className="section-title">
-          Create your {selectedRole === "authority" ? "authority" : "resident"} account
-        </div>
-        <p className="section-sub">
-          {selectedRole === "authority"
-            ? "Create an authority account to review complaints, accept cases, manage work, and publish progress updates."
-            : "Enter your name, email and password to register."}
-        </p>
+        <div className="section-title">Create your resident account</div>
+        <p className="section-sub">Enter your name, email and password to register.</p>
 
         <div className="form-grid">
           <Field label="Full name" placeholder="Your full name"
@@ -513,8 +517,8 @@ function AppShell({ page, go, language, setLanguage, children, official = false 
     ? [{ page: "authority", icon: "home", label: "Overview" }, { page: "review", icon: "file", label: "Complaint review" }, { page: "notifications", icon: "bell", label: t.notifications }, { page: "settings", icon: "user", label: t.settings }]
     : [{ page: "dashboard", icon: "home", label: t.home }, { page: "report", icon: "plus", label: t.report }, { page: "complaints", icon: "file", label: t.complaints }, { page: "notifications", icon: "bell", label: t.notifications }];
   return <div className={`app-shell ${official ? "official-shell" : ""}`}>
-    <header className="app-header"><Logo compact /><button className="mobile-menu" onClick={() => setOpen(!open)} aria-label="Open navigation"><Icon name="menu" /></button><nav className={open ? "open" : ""}>{items.map((item) => <button key={item.page} className={page === item.page ? "active" : ""} onClick={() => { go(item.page); setOpen(false); }}><Icon name={item.icon} />{item.label}</button>)}</nav><div className="header-tools"><LanguageSelect language={language} setLanguage={setLanguage} /><button className="icon-button" onClick={() => go("notifications")} aria-label="Notifications"><Icon name="bell" /><i /></button><button className="avatar" onClick={() => go("settings")} aria-label="Open profile">{official ? "A" : "U"}</button></div></header>
-    {official && <aside className="official-side"><Logo light /><div className="official-label"><Icon name="shield" />Authorized workspace</div>{items.map((item) => <button key={item.page} className={page === item.page ? "active" : ""} onClick={() => go(item.page)}><Icon name={item.icon} />{item.label}</button>)}</aside>}
+    <header className="app-header"><Logo compact /><button className="mobile-menu" onClick={() => setOpen(!open)} aria-label="Open navigation"><Icon name="menu" /></button><nav className={open ? "open" : ""}>{items.map((item) => <button key={item.page} className={page === item.page ? "active" : ""} onClick={() => { go(item.page); setOpen(false); }}><Icon name={item.icon} />{item.label}</button>)}</nav><div className="header-tools"><LanguageSelect language={language} setLanguage={setLanguage} /><button className="icon-button" onClick={() => go("notifications")} aria-label="Notifications"><Icon name="bell" /><i /></button><button className="avatar" onClick={() => go("settings")} aria-label="Open profile">U</button></div></header>
+    {official && <aside className="official-side"><Logo light /><div className="official-label"><Icon name="shield" />Authorized workspace</div>{items.map((item) => <button key={item.page} className={page === item.page ? "active" : ""} onClick={() => go(item.page)}><Icon name={item.icon} />{item.label}</button>)}<button className="resident-switch" onClick={() => go("dashboard")}><Icon name="user" />Resident view</button></aside>}
     <main className="app-main">{children}</main>
   </div>;
 }
@@ -567,7 +571,7 @@ function Dashboard({
 
       try {
         const response = await fetch(
-          `http://127.0.0.1:5000/api/complaints?user_id=${userId}`
+          `${API_BASE}/api/complaints?user_id=${userId}`
         );
 
         const data = await response.json();
@@ -690,7 +694,7 @@ function Dashboard({
                   setLoading(true);
 
                   fetch(
-                    `http://127.0.0.1:5000/api/complaints?user_id=${currentUser.id}`
+                    `${API_BASE}/api/complaints?user_id=${currentUser.id}`
                   )
                     .then(async (response) => {
                       const data = await response.json();
@@ -916,7 +920,7 @@ function ReportIssue({ go, language, setLanguage, currentUser }: {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/complaints", {
+      const response = await fetch(`${API_BASE}/api/complaints`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -979,7 +983,7 @@ function MyComplaints({ go, language, setLanguage, currentUser }: {
     if (!currentUser?.id) { setItems([]); return; }
     let cancelled = false;
     setLoading(true); setError("");
-    fetch(`http://127.0.0.1:5000/api/complaints?user_id=${currentUser.id}`)
+    fetch(`${API_BASE}/api/complaints?user_id=${currentUser.id}`)
       .then(async response => {
         const data = await response.json();
         if (!response.ok || data.success === false) throw new Error(data.message || "Failed to load complaints.");
@@ -1007,19 +1011,14 @@ function Tracking({ go, language, setLanguage }: { go: (p: Page) => void; langua
   return <AppShell page="complaints" go={go} language={language} setLanguage={setLanguage}><div className="content-wrap"><button className="back-link" onClick={() => go("complaints")}><Icon name="back" />Back to my complaints</button><div className="tracking-head"><div><div className="eyebrow">COMPLAINT JS-2025-1048</div><div className="page-title">Large pothole near primary school</div><div className="detail-row"><span><Icon name="file" />Roads & potholes</span><span><Icon name="pin" />Ward 4 · School Road</span><span><Icon name="clock" />Reported 18 Jun 2025</span></div></div><Status value="In Progress" tone="info" /></div><div className="tracking-layout"><div className="tracking-primary"><section className="white-card status-overview"><div><span>Current status</span><strong>Repair work has been scheduled</strong><p>Last updated 20 June 2025 at 11:10 AM</p></div><div className="progress-ring">4<small>of 5</small></div></section><section className="white-card"><div className="section-title">Progress timeline</div><p className="section-sub">Every recorded action appears here in chronological order.</p><div className="timeline">{events.map(([date,title,body,state]) => <div className={`timeline-event ${state}`} key={title}><div className="timeline-marker">{state === "done" ? <Icon name="check" /> : state === "current" ? <span /> : null}</div><div><small>{date}</small><strong>{title}</strong><p>{body}</p>{state === "current" && <span className="current-label">CURRENT STEP</span>}</div></div>)}</div></section><section className="white-card"><div className="section-title">Issue details</div><p>The road surface has a large, deep pothole near the primary school entrance. It becomes difficult to see after rain and may create a safety risk for students and riders.</p><div className="evidence-placeholder"><Icon name="road" size={38} /><span>Photo evidence · 1 image</span></div></section></div><aside className="tracking-side"><section className="white-card"><div className="mini-title">Responsible team</div><div className="department"><span><Icon name="building" /></span><div><strong>Roads Maintenance</strong><p>Local works department</p></div></div><div className="privacy-note"><Icon name="shield" /><span>Official details are shown only when recorded and permitted.</span></div></section><section className="white-card"><div className="mini-title">Need help?</div><p>If important details have changed, add an update for the reviewing team.</p><Button full variant="secondary">Add information</Button></section><section className="white-card transparency"><Icon name="shield" /><div><strong>Transparent by design</strong><p>JanSetu never marks a complaint resolved without an authorized recorded action.</p></div></section></aside></div></div></AppShell>;
 }
 
-function Notifications({ go, language, setLanguage, official = false }: {
-  go: (p: Page) => void;
-  language: Language;
-  setLanguage: (l: Language) => void;
-  official?: boolean;
-}) {
+function Notifications({ go, language, setLanguage }: { go: (p: Page) => void; language: Language; setLanguage: (l: Language) => void }) {
   const notes = [
     ["road","Work has started on your complaint","Roads Maintenance recorded a new progress update for JS-2025-1048.","12 minutes ago",true],
     ["check","Complaint accepted for action","Your complaint JS-2025-1048 was reviewed and accepted.","Yesterday",true],
     ["file","Complaint submitted successfully","Your reference number is JS-2025-1048.","18 Jun",false],
     ["check","Resolution recorded","Waste collection was completed for JS-2025-0976. View the resolution notes.","06 Jun",false],
   ];
-  return <AppShell page="notifications" go={go} language={language} setLanguage={setLanguage} official={official}><div className="narrow-wrap"><PageTitle eyebrow="UPDATES" title="Notifications" body="Status changes and requests related to your complaints." action={<Button variant="ghost">Mark all as read</Button>} /><div className="notification-list">{notes.map(([icon,title,body,time,unread]) => <button className={unread ? "unread" : ""} key={String(title)} onClick={() => go("tracking")}><span className="note-icon"><Icon name={String(icon)} /></span><div><strong>{String(title)}</strong><p>{String(body)}</p><small>{String(time)}</small></div>{unread && <i />}</button>)}</div></div></AppShell>;
+  return <AppShell page="notifications" go={go} language={language} setLanguage={setLanguage}><div className="narrow-wrap"><PageTitle eyebrow="UPDATES" title="Notifications" body="Status changes and requests related to your complaints." action={<Button variant="ghost">Mark all as read</Button>} /><div className="notification-list">{notes.map(([icon,title,body,time,unread]) => <button className={unread ? "unread" : ""} key={String(title)} onClick={() => go("tracking")}><span className="note-icon"><Icon name={String(icon)} /></span><div><strong>{String(title)}</strong><p>{String(body)}</p><small>{String(time)}</small></div>{unread && <i />}</button>)}</div></div></AppShell>;
 }
 
 function Authority({
@@ -1425,17 +1424,14 @@ function AuthorityReview({
     </AppShell>
   );
 }
-function Settings({ go, language, setLanguage, currentUser, official = false }: {
-  go: (p: Page) => void;
-  language: Language;
-  setLanguage: (l: Language) => void;
+function Settings({ go, language, setLanguage, currentUser }: {
+  go: (p: Page) => void; language: Language; setLanguage: (l: Language) => void;
   currentUser?: { id: number; name: string; email: string; role: string } | null;
-  official?: boolean;
 }) {
   const name = currentUser?.name || "Not signed in";
   const email = currentUser?.email || "—";
   const initials = name.split(/\s+/).filter(Boolean).map(part => part[0]).join("").slice(0,2).toUpperCase() || "?";
-  return <AppShell page="settings" go={go} language={language} setLanguage={setLanguage} official={official}><div className="content-wrap"><PageTitle eyebrow="ACCOUNT" title="Profile, help & settings" body="Your profile details from the account you used to log in." /><div className="settings-layout"><aside className="settings-nav"><button className="active"><Icon name="user" />Profile</button><button><Icon name="bell" />Notifications</button><button><Icon name="lock" />Privacy & security</button><button><Icon name="help" />Help & FAQs</button></aside><div className="settings-content"><section className="white-card"><div className="profile-head"><span>{initials}</span><div><div className="section-title">{name}</div><p>{currentUser?.role || "Resident account"}</p></div></div><div className="form-grid"><Field label="Full name" value={name} /><Field label="Email" value={email} /><Field label="User ID" value={currentUser ? String(currentUser.id) : "—"} /><SelectField label="Preferred language" value={language} onChange={(v) => setLanguage(v as Language)}><option value="en">English</option><option value="te">తెలుగు</option><option value="hi">हिन्दी</option></SelectField></div><p className="section-sub">Profile details are loaded from your login response. Profile editing is not connected to the backend yet.</p></section><section className="white-card"><div className="section-title">Help and frequently asked questions</div>{["How do I track my complaint?","Who can see my contact information?","What does each complaint status mean?","How do I add more information?"].map((q) => <button className="faq" key={q}>{q}<Icon name="arrow" /></button>)}</section><section className="white-card privacy-section"><Icon name="shield" size={30} /><div><div className="mini-title">Your privacy</div><p>Your phone number and account information are not displayed publicly.</p></div></section><Button variant="danger" onClick={() => go("login")}>{copy[language].logout}</Button></div></div></div></AppShell>;
+  return <AppShell page="settings" go={go} language={language} setLanguage={setLanguage}><div className="content-wrap"><PageTitle eyebrow="ACCOUNT" title="Profile, help & settings" body="Your profile details from the account you used to log in." /><div className="settings-layout"><aside className="settings-nav"><button className="active"><Icon name="user" />Profile</button><button><Icon name="bell" />Notifications</button><button><Icon name="lock" />Privacy & security</button><button><Icon name="help" />Help & FAQs</button></aside><div className="settings-content"><section className="white-card"><div className="profile-head"><span>{initials}</span><div><div className="section-title">{name}</div><p>{currentUser?.role || "Resident account"}</p></div></div><div className="form-grid"><Field label="Full name" value={name} /><Field label="Email" value={email} /><Field label="User ID" value={currentUser ? String(currentUser.id) : "—"} /><SelectField label="Preferred language" value={language} onChange={(v) => setLanguage(v as Language)}><option value="en">English</option><option value="te">తెలుగు</option><option value="hi">हिन्दी</option></SelectField></div><p className="section-sub">Profile details are loaded from your login response. Profile editing is not connected to the backend yet.</p></section><section className="white-card"><div className="section-title">Help and frequently asked questions</div>{["How do I track my complaint?","Who can see my contact information?","What does each complaint status mean?","How do I add more information?"].map((q) => <button className="faq" key={q}>{q}<Icon name="arrow" /></button>)}</section><section className="white-card privacy-section"><Icon name="shield" size={30} /><div><div className="mini-title">Your privacy</div><p>Your phone number and account information are not displayed publicly.</p></div></section><Button variant="danger" onClick={() => go("login")}>{copy[language].logout}</Button></div></div></div></AppShell>;
 }
 function RoleSelection({
   go,
@@ -1542,35 +1538,25 @@ export default function App() {
       );
 
     case "register":
-      return <Register {...props} selectedRole={selectedRole} />;
+      return <Register {...props} />;
     case "dashboard":
-      return currentUser?.role === "authority"
-        ? <Authority {...props} />
-        : <Dashboard {...props} />;
+      return <Dashboard {...props} />;
     case "report":
-      return currentUser?.role === "authority"
-        ? <Authority {...props} />
-        : <ReportIssue {...props} />;
+      return <ReportIssue {...props} />;
     case "success":
-      return currentUser?.role === "authority"
-        ? <Authority {...props} />
-        : <Success {...props} />;
+      return <Success {...props} />;
     case "complaints":
-      return currentUser?.role === "authority"
-        ? <Authority {...props} />
-        : <MyComplaints {...props} />;
+      return <MyComplaints {...props} />;
     case "tracking":
-      return currentUser?.role === "authority"
-        ? <Authority {...props} />
-        : <Tracking {...props} />;
+      return <Tracking {...props} />;
     case "notifications":
-      return <Notifications {...props} official={currentUser?.role === "authority"} />;
+      return <Notifications {...props} />;
     case "authority":
       return <Authority {...props} />;
     case "review":
       return <AuthorityReview {...props} />;
     case "settings":
-      return <Settings {...props} official={currentUser?.role === "authority"} />;
+      return <Settings {...props} />;
 
     default:
       return <Login {...props} selectedRole={selectedRole} />;
