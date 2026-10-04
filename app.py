@@ -95,18 +95,21 @@ def register():
     password = data.get("password", "")
     role = str(data.get("role", "resident")).strip().lower()
 
+    # Validate role
     if role not in {"resident", "authority"}:
         return jsonify({
             "success": False,
             "message": "Invalid account role"
         }), 400
 
+    # Validate required fields
     if not name or not email or not isinstance(password, str) or not password:
         return jsonify({
             "success": False,
             "message": "Name, email and password are required"
         }), 400
 
+    # Validate password
     if len(password) < 8:
         return jsonify({
             "success": False,
@@ -118,56 +121,85 @@ def register():
 
     try:
         connection = get_db_connection()
+
+        # Dictionary cursor is not required for INSERT
         cursor = connection.cursor()
 
-        # Store the selected account role. The database schema must allow
-        # both `resident` and `authority`; this endpoint does not attempt
-        # to alter the schema automatically because the database user may
-        # intentionally not have ALTER TABLE permission.
+        # Check whether email already exists
+        cursor.execute(
+            "SELECT id FROM users WHERE email = %s",
+            (email,)
+        )
+
+        existing_user = cursor.fetchone()
+
+        if existing_user:
+            return jsonify({
+                "success": False,
+                "message": "This email is already registered"
+            }), 409
+
+        # Hash password before storing it
         password_hash = generate_password_hash(password)
 
+        # Insert new account
         cursor.execute(
             """
-            INSERT INTO users (name, email, password_hash, role)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO users
+                (name, email, password_hash, role)
+            VALUES
+                (%s, %s, %s, %s)
             """,
             (name, email, password_hash, role)
         )
+
         connection.commit()
 
         return jsonify({
             "success": True,
-            "message": f"{role.title()} account created successfully",
+            "message": "Account created successfully",
             "role": role
         }), 201
 
-    except mysql.connector.IntegrityError:
+    except mysql.connector.IntegrityError as exc:
+        if connection is not None:
+            connection.rollback()
+
+        app.logger.exception("Registration integrity error")
+
         return jsonify({
             "success": False,
             "message": "This email is already registered"
         }), 409
 
     except Error as exc:
-        app.logger.exception("Registration failed")
+        if connection is not None:
+            connection.rollback()
 
-        if role == "authority":
-            return jsonify({
-                "success": False,
-                "message": "Authority registration failed. Your database users.role column must allow 'authority'.",
-                "detail": str(exc)
-            }), 500
+        app.logger.exception("Registration database error")
 
         return jsonify({
             "success": False,
             "message": "Registration failed. Please try again."
         }), 500
 
+    except Exception as exc:
+        if connection is not None:
+            connection.rollback()
+
+        app.logger.exception("Unexpected registration error")
+
+        return jsonify({
+            "success": False,
+            "message": "Registration failed because of a server error."
+        }), 500
+
     finally:
         if cursor is not None:
             cursor.close()
+
         if connection is not None and connection.is_connected():
             connection.close()
-
 
 # Login with email and password
 @app.route("/api/login", methods=["POST"])
