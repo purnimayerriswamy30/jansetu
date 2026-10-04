@@ -17,12 +17,15 @@ DB_CONFIG = {
     "password": os.environ.get("MYSQL_PASSWORD"),
     "database": os.environ.get("MYSQL_DATABASE"),
 }
-
 # Reusable database connection
 def get_db_connection():
-    return mysql.connector.connect(**DB_CONFIG)
-
-
+    return mysql.connector.connect(
+        host=DB_CONFIG["host"],
+        port=DB_CONFIG["port"],
+        user=DB_CONFIG["user"],
+        password=DB_CONFIG["password"],
+        database=DB_CONFIG["database"],
+    )
 # Home Route
 @app.route("/")
 def home():
