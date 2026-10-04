@@ -1120,12 +1120,12 @@ function Tracking({ go, language, setLanguage }: { go: (p: Page) => void; langua
   ];
   return <AppShell page="complaints" go={go} language={language} setLanguage={setLanguage}><div className="content-wrap"><button className="back-link" onClick={() => go("complaints")}><Icon name="back" />Back to my complaints</button><div className="tracking-head"><div><div className="eyebrow">COMPLAINT JS-2025-1048</div><div className="page-title">Large pothole near primary school</div><div className="detail-row"><span><Icon name="file" />Roads & potholes</span><span><Icon name="pin" />Ward 4 · School Road</span><span><Icon name="clock" />Reported 18 Jun 2025</span></div></div><Status value="In Progress" tone="info" /></div><div className="tracking-layout"><div className="tracking-primary"><section className="white-card status-overview"><div><span>Current status</span><strong>Repair work has been scheduled</strong><p>Last updated 20 June 2025 at 11:10 AM</p></div><div className="progress-ring">4<small>of 5</small></div></section><section className="white-card"><div className="section-title">Progress timeline</div><p className="section-sub">Every recorded action appears here in chronological order.</p><div className="timeline">{events.map(([date,title,body,state]) => <div className={`timeline-event ${state}`} key={title}><div className="timeline-marker">{state === "done" ? <Icon name="check" /> : state === "current" ? <span /> : null}</div><div><small>{date}</small><strong>{title}</strong><p>{body}</p>{state === "current" && <span className="current-label">CURRENT STEP</span>}</div></div>)}</div></section><section className="white-card"><div className="section-title">Issue details</div><p>The road surface has a large, deep pothole near the primary school entrance. It becomes difficult to see after rain and may create a safety risk for students and riders.</p><div className="evidence-placeholder"><Icon name="road" size={38} /><span>Photo evidence · 1 image</span></div></section></div><aside className="tracking-side"><section className="white-card"><div className="mini-title">Responsible team</div><div className="department"><span><Icon name="building" /></span><div><strong>Roads Maintenance</strong><p>Local works department</p></div></div><div className="privacy-note"><Icon name="shield" /><span>Official details are shown only when recorded and permitted.</span></div></section><section className="white-card"><div className="mini-title">Need help?</div><p>If important details have changed, add an update for the reviewing team.</p><Button full variant="secondary">Add information</Button></section><section className="white-card transparency"><Icon name="shield" /><div><strong>Transparent by design</strong><p>JanSetu never marks a complaint resolved without an authorized recorded action.</p></div></section></aside></div></div></AppShell>;
 }
-
 function Notifications({
   go,
   language,
   setLanguage,
   currentUser,
+  selectedRole,
 }: {
   go: (p: Page) => void;
   language: Language;
@@ -1136,9 +1136,10 @@ function Notifications({
     email: string;
     role: string;
   } | null;
+  selectedRole: "resident" | "authority";
 }) {
   const isAuthority =
-    String(currentUser?.role).toLowerCase() === "authority";
+  String(currentUser?.role || selectedRole).toLowerCase() === "authority";
 
   const residentNotes = [
     [
@@ -1792,12 +1793,13 @@ export default function App() {
     case "tracking":
       return <Tracking {...props} />;
     case "notifications":
-      return (
-        <Notifications
-          {...props}
-          currentUser={currentUser}
-        />
-      );
+    return (
+      <Notifications
+        {...props}
+        currentUser={currentUser}
+        selectedRole={selectedRole}
+      />
+    );
     case "authority":
       return <Authority {...props} />;
     case "review":
