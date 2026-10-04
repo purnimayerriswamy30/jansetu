@@ -1,0 +1,10 @@
+{
+  "description": "Empowering Indian village residents to report civic issues, track progress, and view resolutions, fostering community engagement and transparency.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
