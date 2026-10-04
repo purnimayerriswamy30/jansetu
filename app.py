@@ -11,13 +11,12 @@ CORS(app)
 
 # MySQL Database Configuration
 DB_CONFIG = {
-    "host": "localhost",
-    "port": 3306,
-    "user": "jansetu_app",
-    "password":"JanSetuApp@2026",
-    "database": "jansetu"
+    "host": os.environ.get("MYSQL_HOST"),
+    "port": int(os.environ.get("MYSQL_PORT", "3306")),
+    "user": os.environ.get("MYSQL_USER"),
+    "password": os.environ.get("MYSQL_PASSWORD"),
+    "database": os.environ.get("MYSQL_DATABASE"),
 }
-
 
 # Reusable database connection
 def get_db_connection():
